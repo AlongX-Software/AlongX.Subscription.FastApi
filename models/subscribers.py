@@ -10,10 +10,10 @@ class Subscriber(BASE):
     mobile_number = Column(Text)  
     email =  Column(Text)
     date_of_registration = Column(DateTime)
-    addressline = Column(Text),nullable=True
-    city = Column(Text),nullable=True
-    state = Column(Text),nullable=True
-    country = Column(Text),nullable=True
-    pincode = Column(Text),nullable=True
+    addressline = Column(Text)
+    city = Column(Text)
+    state = Column(Text)
+    country = Column(Text)
+    pincode = Column(Text)
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)

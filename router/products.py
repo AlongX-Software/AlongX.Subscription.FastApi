@@ -26,11 +26,14 @@ async def create_product(product_data: ProductBase, db: db_dependency):
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.get("/get-product/{product_id}/")
-async def get_product(product_id: int, db: db_dependency):
-    product = db.query(Products).filter(Products.product_id == product_id, Products.is_deleted == False).first()
+async def get_product_by_id(product_id: int, db: db_dependency):
+    product = db.query(Products).filter(
+        Products.product_id == product_id,
+        Products.is_deleted == False
+    ).first()
     if product is None:
-        raise HTTPException(status_code=404, detail="Product not found")
-    return {"status": "success", "data": product}
+        raise raise_exception(404, "Product not found")
+    return jsonable_encoder(product)
 
 @router.delete("/delete-product/{product_id}/")
 async def delete_product(product_id: int, db: db_dependency):

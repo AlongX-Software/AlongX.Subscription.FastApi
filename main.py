@@ -11,10 +11,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# @app.get("/")
-# async def home():
-#     return {"message": "Welcome to AlongX.Subscription.Api API"}
-
 app.include_router(
     products.router,
     prefix="/Products",

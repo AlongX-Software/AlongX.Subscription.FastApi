@@ -11,14 +11,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(
-    products.router,
-    prefix="/Products",
-    tags=["Products"]
-)
-app.include_router(
     plans.router,
     prefix="/Plans",
     tags=["Plans"]
+)
+app.include_router(
+    products.router,
+    prefix="/Products",
+    tags=["Products"]
 )
 app.include_router(
     subscribers.router,

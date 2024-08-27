@@ -33,7 +33,20 @@ async def create_subscriber(subscriber_data: SubscriberBase, db: db_dependency):
     product = db.query(Products).filter(Products.product_id == subscriber_data.product_id).first()
     if product is None:
         raise raise_exception(404, "Product not found")
-
+    existing_email = db.query(Subscriber).filter(
+        Subscriber.product_id == subscriber_data.product_id,
+        Subscriber.email == subscriber_data.email,
+        Subscriber.is_active == True
+    ).first()
+    if existing_email:
+        raise raise_exception(400, f"Email '{subscriber_data.email}' already exists for this product")
+    existing_mobile = db.query(Subscriber).filter(
+        Subscriber.product_id == subscriber_data.product_id,
+        Subscriber.mobile_number == subscriber_data.mobile_number,
+        Subscriber.is_active == True
+    ).first()
+    if existing_mobile:
+        raise raise_exception(400, f"Mobile number '{subscriber_data.mobile_number}' already exists for this product")
     try:
         subscriber = Subscriber(**subscriber_data.dict())
         db.add(subscriber)

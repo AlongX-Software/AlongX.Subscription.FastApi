@@ -43,7 +43,6 @@ async def renew_product(request: RenewProduct, db: db_dependency):
             is_active=request.is_active,
             is_deleted=False
         )
-        
         db.add(new_subscription)
         db.commit()
         db.refresh(new_subscription)  

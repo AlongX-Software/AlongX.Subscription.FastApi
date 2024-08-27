@@ -27,15 +27,24 @@ async def validate_account(subscriber_id: int, db: db_dependency):
     ).order_by(desc(Subscriptions.date_of_transations)).first()  
     if not latest_subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
-    plan = db.query(Plans).filter(Plans.plan_id == latest_subscription.plan_id, Plans.is_deleted == False).first()
+    plan = db.query(Plans).filter(
+        Plans.plan_id == latest_subscription.plan_id, 
+        Plans.is_deleted == False
+    ).first()
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
+    subscriber = db.query(Subscriber).filter(
+        Subscriber.subscribers_id == subscriber_id,
+        Subscriber.is_deleted == False
+    ).first()
+    if not subscriber:
+        raise HTTPException(status_code=404, detail="Subscriber not found")
     valid_till_date = latest_subscription.valid_till
     today = datetime.utcnow()
     remaining_days = (valid_till_date - today).days
     response = AccountValidation(
         status=remaining_days >= 0,
-        OrganizationName=None if not latest_subscription else (db.query(Subscriber).filter(Subscriber.subscribers_id == subscriber_id).first().organization_name),
+        OrganizationName=subscriber.organization_name if subscriber else None,
         PlanId=latest_subscription.plan_id,
         PlanName=plan.plan_name,
         LastDateOfTransaction=latest_subscription.date_of_transations,

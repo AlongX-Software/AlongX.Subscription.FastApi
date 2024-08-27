@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from .basic_import import *
 from models.plans import Plans
+from models.subscribers import Subscriber
 from models.products import Products
 
 router = APIRouter()
@@ -39,15 +40,16 @@ async def get_plans_by_product(product_id: int, db: db_dependency):
 
 @router.delete("/delete-plan/{plan_id}")
 async def delete_plan(plan_id: int, db: db_dependency):
-    plan = db.query(Plans).filter(
-        Plans.plan_id == plan_id,
-        Plans.is_deleted == False
-    ).first()
-    if plan is None:
-        raise raise_exception(404, "Plan not found")
     try:
-        plan.is_deleted = True
-        db.commit()
-        return succes_response(None, "Plan deleted successfully")
+        subscriber_exists = db.query(Subscriber).filter(Subscriber.plan_id == plan_id, Subscriber.is_deleted == False).first()
+        if not subscriber_exists:
+            plan = await check_instance(Plans, "plan_id", plan_id, db)
+            if plan is None:
+                raise raise_exception(404, "Plan not found")       
+            plan.is_deleted = True
+            db.commit()
+            return succes_response(plan, "Plan deleted successfully")
+        else:
+            raise raise_exception(400, "Cannot delete plan as it is being used by a Subscriber")
     except Exception as e:
-        raise raise_exception(500, f"Internal Server Error: {e}")
+        raise raise_exception(500, f"Operation failed: {e}")

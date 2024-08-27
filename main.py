@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from router import products,plans,subscribers,subscriptions,subcrption_history
+from router import products,plans,subscribers,subscriptions,subcrption_history,notifications
 
 app = FastAPI(title="AlongX.Subscription.Api",description="AlongX.Subscription.Api",version="V0.01")
 app.add_middleware(
@@ -9,6 +9,11 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+app.include_router(
+    notifications.router,
+    prefix="/Notifications",
+    tags=["Notifications"]
 )
 app.include_router(
     plans.router,

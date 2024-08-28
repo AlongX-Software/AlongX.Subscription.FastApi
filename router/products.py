@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 from .basic_import import *
 from models.products import Products 
+from router.login import check_auth_key
 
 router = APIRouter()
 
@@ -26,7 +27,7 @@ async def create_product(product_data: ProductBase, db: db_dependency):
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.get("/get-product/{product_id}/")
-async def get_product_by_id(product_id: int, db: db_dependency):
+async def get_product_by_id(product_id: int, db: db_dependency,user_id: int = Depends(check_auth_key)):
     product = db.query(Products).filter(
         Products.product_id == product_id,
         Products.is_deleted == False
@@ -36,7 +37,7 @@ async def get_product_by_id(product_id: int, db: db_dependency):
     return jsonable_encoder(product)
 
 @router.delete("/delete-product/{product_id}/")
-async def delete_product(product_id: int, db: db_dependency):
+async def delete_product(product_id: int, db: db_dependency,user_id: int = Depends(check_auth_key)):
     product = db.query(Products).filter(Products.product_id == product_id).first()
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")

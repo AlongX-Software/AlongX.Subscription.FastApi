@@ -1,6 +1,6 @@
 from database.db import db_dependency,engine
 from fastapi.encoders import jsonable_encoder
-from fastapi import APIRouter,status,WebSocket,WebSocketDisconnect,Depends,BackgroundTasks
+from fastapi import APIRouter,status,WebSocket,WebSocketDisconnect,Depends,BackgroundTasks,Request
 from pydantic import BaseModel,Field,EmailStr,validator
 from fastapi.exceptions import HTTPException
 from sqlalchemy.orm import joinedload
@@ -8,7 +8,7 @@ from datetime import datetime
 import re,json
 from pytz import timezone
 from enum import Enum
-import threading
+import threading,asyncio
 from typing import Optional
 
 class Role(str, Enum):
@@ -40,24 +40,3 @@ async def get_current_ist_time():
     ist_timezone = timezone("Asia/Kolkata")
     current_time = datetime.now(ist_timezone)
     return current_time
-
-date_format_mapping = {
-    "DD-MM-YYYY": "%d-%m-%Y",
-    "MM-DD-YYYY": "%m-%d-%Y",
-    "YYYY-MM-DD": "%Y-%m-%d",
-    "DD/MM/YYYY": "%d/%m/%Y",
-    "MM/DD/YYYY": "%m/%d/%Y",
-    "YYYY/MM/DD": "%Y/%m/%d",
-    "DD.MM.YYYY": "%d.%m.%Y",
-    "MM.DD.YYYY": "%m.%d.%Y",
-    "YYYY.MM.DD": "%Y.%m.%d",
-    "DD MMM YYYY": "%d %b %Y",
-    "MMM DD, YYYY": "%b %d, %Y",
-    "YYYY MMM DD": "%Y %b %d",
-    "DD Month YYYY": "%d %B %Y",
-    "Month DD, YYYY": "%B %d, %Y",
-    "YYYY Month DD": "%Y %B %d"
-}
-
-def get_time_formate(formate="DD-MM-YYYY"):
-    return date_format_mapping.get(formate,"%d-%m-%Y")

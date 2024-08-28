@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from router import products,plans,subscribers,subscriptions,subcrption_history,notifications,renew_product,account_validation
+from router import products,plans,subscribers,subscriptions,subcrption_history,notifications,renew_product,account_validation,login
 
-app = FastAPI(title="AlongX.Subscription.Api",description="AlongX.Subscription.Api",version="V0.01")
+app = FastAPI(title="AlongX.Subscription.Api",description="AlongX Subscription API",version="V0.01")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -10,6 +10,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(
+    login.router,
+    prefix="/Login",
+    tags=["Login"]
+)
+
 app.include_router(
     account_validation.router,
     prefix="/AccountValidation",

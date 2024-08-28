@@ -7,11 +7,12 @@ from .basic_import import *
 from models.subscriptions import Subscriptions
 from models.plans import Plans
 from models.subscribers import Subscriber
+from router.login import check_auth_key
 
 router = APIRouter()
 
 @router.get("/get-subscriptions-by-subscriber/{subscriber_id}")
-async def get_subscriptions_by_subscriber(subscriber_id: int, db: db_dependency):
+async def get_subscriptions_by_subscriber(subscriber_id: int, db: db_dependency,user_id: int = Depends(check_auth_key)):
     subscriptions = db.query(
         Subscriptions,
         Subscriber.organization_name,

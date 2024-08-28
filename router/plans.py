@@ -1,10 +1,8 @@
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
 from .basic_import import *
 from models.plans import Plans
 from models.subscribers import Subscriber
 from models.products import Products
-
+from router.login import check_auth_key
 router = APIRouter()
 
 class PlanBase(BaseModel):
@@ -31,7 +29,7 @@ async def create_plan(plan_data: PlanBase, db: db_dependency):
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.get("/get-plans-by-product/{product_id}")
-async def get_plans_by_product(product_id: int, db: db_dependency):
+async def get_plans_by_product(product_id: int, db:db_dependency, user_id: int = Depends(check_auth_key)):
     plans = db.query(Plans).filter(
         Plans.product_id == product_id,
         Plans.is_deleted == False
@@ -39,7 +37,7 @@ async def get_plans_by_product(product_id: int, db: db_dependency):
     return jsonable_encoder(plans)
 
 @router.delete("/delete-plan/{plan_id}")
-async def delete_plan(plan_id: int, db: db_dependency):
+async def delete_plan(plan_id: int,db: db_dependency,user_id: int = Depends(check_auth_key)):
     try:
         subscriber_exists = db.query(Subscriber).filter(Subscriber.plan_id == plan_id, Subscriber.is_deleted == False).first()
         if not subscriber_exists:

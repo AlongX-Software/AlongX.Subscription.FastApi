@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
 from typing import Optional, Dict
-from datetime import datetime
+from datetime import datetime,timedelta
 from .basic_import import *
 from models.subscribers import Subscriber
+from models.valid_keys import AuthKeys
 from models.plans import Plans
 from models.products import Products
+from models.subscriptions import Subscriptions
+import random
+
+AuthKeys.metadata.create_all(engine)
 
 router = APIRouter()
 
@@ -38,15 +40,39 @@ class SubscriberUpdate(BaseModel):
     country: Optional[str] = None
     pincode: Optional[str] = None
     is_active: Optional[bool] = None
- 
+
+def genare_auth_key(limit=16):
+    return ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIFJKMLNO') for _ in range(limit))
+
+async def is_auth_key_unique(db):
+    auth_key = genare_auth_key()
+    while db.query(AuthKeys).filter(AuthKeys.key_value == auth_key).first():
+        auth_key = genare_auth_key()
+    return auth_key
+
+async def create_auth_key(db,sub_id: int):
+    auth_key = await is_auth_key_unique(db)
+    try:
+        auth = AuthKeys(
+            key_value=auth_key,
+            subscriber_id=sub_id
+        )
+        db.add(auth)
+        db.commit()
+    except Exception as e:
+        print(f"Error creating auth key: {e}")
+        db.rollback()
+
 @router.post("/create-subscriber/")
-async def create_subscriber(subscriber_data: SubscriberBase, db: db_dependency):
+async def create_subscriber(subscriber_data: SubscriberBase, db: db_dependency, background: BackgroundTasks):
     plan = db.query(Plans).filter(Plans.plan_id == subscriber_data.plan_id).first()
     if plan is None:
         raise raise_exception(404, "Plan not found")
+    
     product = db.query(Products).filter(Products.product_id == subscriber_data.product_id).first()
     if product is None:
         raise raise_exception(404, "Product not found")
+    
     existing_email = db.query(Subscriber).filter(
         Subscriber.product_id == subscriber_data.product_id,
         Subscriber.email == subscriber_data.email,
@@ -54,6 +80,7 @@ async def create_subscriber(subscriber_data: SubscriberBase, db: db_dependency):
     ).first()
     if existing_email:
         raise raise_exception(400, f"Email '{subscriber_data.email}' already exists for this product")
+    
     existing_mobile = db.query(Subscriber).filter(
         Subscriber.product_id == subscriber_data.product_id,
         Subscriber.mobile_number == subscriber_data.mobile_number,
@@ -61,14 +88,49 @@ async def create_subscriber(subscriber_data: SubscriberBase, db: db_dependency):
     ).first()
     if existing_mobile:
         raise raise_exception(400, f"Mobile number '{subscriber_data.mobile_number}' already exists for this product")
+    
     try:
         subscriber = Subscriber(**subscriber_data.dict())
         db.add(subscriber)
         db.commit()
         db.refresh(subscriber)
+        background.add_task(create_auth_key, db, subscriber.subscribers_id)
+        background.add_task(create_subscriptions, plan.plan_id, subscriber.subscribers_id, db)
         return succes_response(subscriber, "Subscriber created successfully")
     except Exception as e:
+        db.rollback()
         raise raise_exception(500, f"Internal Server Error: {e}")
+
+async def create_subscriptions(plan_id: int, subscriber_id: int, db):
+    plan = db.query(Plans).filter(Plans.plan_id == plan_id).first()
+    if plan is None:
+        raise raise_exception(404, "Plan not found")
+    
+    subscriber = db.query(Subscriber).filter(Subscriber.subscribers_id == subscriber_id).first()
+    if subscriber is None:
+        raise raise_exception(404, "Subscriber not found")
+    
+    try:
+        valid_till = datetime.today().date() + timedelta(days=int(plan.duration_in_days))
+        subscription = Subscriptions(
+            plan_id=plan_id,
+            subscriber_id=subscriber_id,
+            date_of_transations=datetime.now(),  # Corrected attribute name
+            valid_till=valid_till.strftime("%Y-%m-%d 23:59:59"),
+            payment_details="Payment Paid",
+            payment_status="Paid",
+            remarks="",
+            currency="inr",
+            amount_paid=plan.amount
+        )
+        db.add(subscription)
+        db.commit()
+        db.refresh(subscription)
+        return "Done"
+    except Exception as e:
+        db.rollback()
+        print(e)
+
 
 @router.get("/get-subscriber/{subscribers_id}")
 async def get_subscriber_by_id(subscribers_id: int, db: db_dependency):

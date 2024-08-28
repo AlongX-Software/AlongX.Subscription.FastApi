@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, Dict
-from datetime import datetime
+from datetime import datetime,timedelta
 from .basic_import import *
 from models.subscriptions import Subscriptions
 from models.plans import Plans
@@ -13,14 +13,38 @@ router = APIRouter()
 class SubscriptionBase(BaseModel):
     plan_id: int
     subscriber_id: int
-    date_of_transations: datetime
-    valid_till: datetime
-    payment_details: str
-    payment_status: str
-    remarks: Optional[str] = None
-    currency: str
-    amount_paid: float
-    is_active: Optional[bool] = True
+
+
+def create_subscriptions(plan_id, subscriber_id, db):
+    plan = db.query(Plans).filter(Plans.plan_id == plan_id).first()
+    if plan is None:
+        raise raise_exception(404, "Plan not found")
+    
+    subscriber = db.query(Subscriber).filter(Subscriber.subscribers_id == subscriber_id).first()
+    if subscriber is None:
+        raise raise_exception(404, "Subscriber not found")
+    
+    try:
+        valid_till = datetime.today().date() + timedelta(days=int(plan.duration_in_days))
+        subscription = Subscriptions(
+            plan_id=plan_id,
+            subscriber_id=subscriber_id,
+            date_of_transations=datetime.today(), 
+            valid_till=valid_till,
+            payment_details="Payment Paid",
+            payment_status="Paid",
+            remarks="",
+            currency="inr",
+            amount_paid=plan.amount
+        )
+        db.add(subscription)
+        db.commit()
+        db.refresh(subscription)
+        return "Done"
+    except Exception as e:
+        db.rollback()
+        print(e)
+
 
 @router.post("/create-subscription/")
 async def create_subscription(subscription_data: SubscriptionBase, db: db_dependency):
@@ -89,7 +113,7 @@ async def delete_subscription(subcrption_id: int, db: db_dependency):
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.patch("/update-subscription/{subcrption_id}")
-async def update_subscription(subcrption_id: int, update_data: Dict[str, Optional[str]], db: db_dependency):
+async def update_subscription(subcrption_id: int, update_data: Dict[str, Optional[str]], db: db_dependency,):
     subscription = db.query(Subscriptions).filter(
         Subscriptions.subcrption_id == subcrption_id,
         Subscriptions.is_deleted == False

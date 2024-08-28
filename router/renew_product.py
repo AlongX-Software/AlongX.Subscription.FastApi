@@ -6,6 +6,7 @@ from .basic_import import *
 from models.subscribers import Subscriber
 from models.plans import Plans
 from models.subscriptions import Subscriptions
+from router.login import check_auth_key
 
 router = APIRouter()
 
@@ -20,7 +21,7 @@ class RenewProduct(BaseModel):
     is_active: bool
 
 @router.post("/renew-product/")
-async def renew_product(request: RenewProduct, db: db_dependency):
+async def renew_product(request: RenewProduct, db: db_dependency,user_id: int = Depends(check_auth_key)):
     try:
         plan = db.query(Plans).filter(Plans.plan_id == request.plan_id, Plans.is_deleted == False).first()
         if plan is None:

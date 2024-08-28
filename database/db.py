@@ -16,7 +16,7 @@ encoded_password = urllib.parse.quote_plus(password)
 SQLALCHEMY_DATABASE_URL = f"mssql+pyodbc://{encoded_username}:{encoded_password}@{host}:1433/{database}?driver=ODBC+Driver+17+for+SQL+Server"
 
 # creating connections
-engine = create_engine(SQLALCHEMY_DATABASE_URL,connect_args={"ssl_ca": "DigiCertGlobalRootG2.crt.pem"})
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autoflush=False,autocommit=False,bind=engine)
 BASE = declarative_base()
 

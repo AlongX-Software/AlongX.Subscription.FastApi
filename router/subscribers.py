@@ -24,6 +24,20 @@ class SubscriberBase(BaseModel):
     country: Optional[str] = None
     pincode: Optional[str] = None
     is_active: Optional[bool] = True
+
+class SubscriberUpdate(BaseModel):
+    plan_id: Optional[int] = None
+    product_id: Optional[int] = None
+    organization_name: Optional[str] = None
+    contact_name: Optional[str] = None
+    mobile_number: Optional[str] = None
+    email: Optional[str] = None
+    addressline: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    pincode: Optional[str] = None
+    is_active: Optional[bool] = None
  
 @router.post("/create-subscriber/")
 async def create_subscriber(subscriber_data: SubscriberBase, db: db_dependency):
@@ -83,16 +97,16 @@ async def delete_subscriber(subscribers_id: int, db: db_dependency):
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.patch("/update-subscriber/{subscribers_id}")
-async def update_subscriber(subscribers_id: int, update_data: Dict[str, Optional[str]], db: db_dependency):
+async def update_subscriber(subscribers_id: int, update_data: SubscriberUpdate, db: db_dependency):
     subscriber = db.query(Subscriber).filter(
         Subscriber.subscribers_id == subscribers_id,
         Subscriber.is_deleted == False
-    ).first()
+    ).first()   
     if subscriber is None:
         raise raise_exception(404, "Subscriber not found")
+    update_data = update_data.dict(exclude_unset=True) 
     for key, value in update_data.items():
-        if hasattr(subscriber, key) and value is not None:
-            setattr(subscriber, key, value)
+        setattr(subscriber, key, value)
     try:
         db.commit()
         db.refresh(subscriber)

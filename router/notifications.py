@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from .basic_import import *
 from models.notifications import Notification
-
+from router.login import check_auth_key
 router = APIRouter()
 
 class NotificationCreate(BaseModel):
@@ -25,7 +25,7 @@ async def create_notification(notification_data: NotificationCreate, db: db_depe
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.get("/get-notifications/")
-async def get_notifications(product_id: int,  subscriber_id: Optional[int] , db: db_dependency):
+async def get_notifications(product_id: int,  subscriber_id: Optional[int] , db: db_dependency,user_id: int = Depends(check_auth_key)):
     try:
         query = db.query(Notification).filter(Notification.product_id == product_id, Notification.is_deleted == False)
         if subscriber_id:
@@ -40,7 +40,7 @@ async def get_notifications(product_id: int,  subscriber_id: Optional[int] , db:
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.delete("/delete-notification/{notification_id}")
-async def delete_notification(notification_id: int, db: db_dependency):
+async def delete_notification(notification_id: int, db: db_dependency,user_id: int = Depends(check_auth_key)):
     try:
         notification = await check_instance(Notification, "notifications_id", notification_id, db)
         if notification is None:

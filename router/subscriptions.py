@@ -7,7 +7,7 @@ from .basic_import import *
 from models.subscriptions import Subscriptions
 from models.plans import Plans
 from models.subscribers import Subscriber
-
+from router.login import check_auth_key
 router = APIRouter()
 
 class SubscriptionBase(BaseModel):
@@ -64,7 +64,7 @@ async def create_subscription(subscription_data: SubscriptionBase, db: db_depend
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.get("/get-subscription/{subcrption_id}")
-async def get_subscription_by_id(subcrption_id: int, db: db_dependency):
+async def get_subscription_by_id(subcrption_id: int, db: db_dependency,user_id: int = Depends(check_auth_key)):
     subscription = db.query(
         Subscriptions,
         Subscriber.organization_name,
@@ -98,7 +98,7 @@ async def get_subscription_by_id(subcrption_id: int, db: db_dependency):
     return jsonable_encoder(response)
 
 @router.delete("/delete-subscription/{subcrption_id}")
-async def delete_subscription(subcrption_id: int, db: db_dependency):
+async def delete_subscription(subcrption_id: int, db: db_dependency,user_id: int = Depends(check_auth_key)):
     subscription = db.query(Subscriptions).filter(
         Subscriptions.subcrption_id == subcrption_id,
         Subscriptions.is_deleted == False
@@ -113,7 +113,7 @@ async def delete_subscription(subcrption_id: int, db: db_dependency):
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.patch("/update-subscription/{subcrption_id}")
-async def update_subscription(subcrption_id: int, update_data: Dict[str, Optional[str]], db: db_dependency,):
+async def update_subscription(subcrption_id: int, update_data: Dict[str, Optional[str]], db: db_dependency,user_id: int = Depends(check_auth_key)):
     subscription = db.query(Subscriptions).filter(
         Subscriptions.subcrption_id == subcrption_id,
         Subscriptions.is_deleted == False

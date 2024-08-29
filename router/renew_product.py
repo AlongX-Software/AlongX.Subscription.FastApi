@@ -6,6 +6,7 @@ from .basic_import import *
 from models.subscribers import Subscriber
 from models.plans import Plans
 from models.subscriptions import Subscriptions
+from models.valid_keys import AuthKeys
 from router.login import check_auth_key
 
 router = APIRouter()
@@ -20,8 +21,20 @@ class RenewProduct(BaseModel):
     currency: str
     is_active: bool
 
+def update_auth_key(sub_id:int,days:int,db):
+    try:
+        auth_key = asyncio.run(check_instance(AuthKeys,"subscriber_id",sub_id,db))
+        if auth_key is None:
+            return ""
+        auth_key.key_valid_till = datetime.now() + timedelta(days=days)
+        db.commit()
+    except Exception as e:
+        print(e)
+        pass
+
+
 @router.post("/renew-product/")
-async def renew_product(request: RenewProduct, db: db_dependency,user_id: int = Depends(check_auth_key)):
+async def renew_product(request: RenewProduct, db: db_dependency):
     try:
         plan = db.query(Plans).filter(Plans.plan_id == request.plan_id, Plans.is_deleted == False).first()
         if plan is None:
@@ -47,6 +60,7 @@ async def renew_product(request: RenewProduct, db: db_dependency,user_id: int = 
         db.add(new_subscription)
         db.commit()
         db.refresh(new_subscription)  
+        update_auth_key(request.subscriber_id,duration_in_days,db)
         return succes_response(new_subscription, "Product subscription renewed successfully")
     except Exception as e:
         raise raise_exception(500, f"Operation failed: {e}")

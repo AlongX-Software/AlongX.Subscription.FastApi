@@ -6,6 +6,7 @@ from models.plans import Plans
 from .basic_import import *
 from models.subscriptions import Subscriptions
 from pydantic import BaseModel
+from router.login import check_auth_key
 
 router = APIRouter()
 
@@ -20,7 +21,7 @@ class AccountValidation(BaseModel):
     Message: str
 
 @router.get("/validate-account/{subscriber_id}", response_model=AccountValidation)
-async def validate_account(subscriber_id: int, db: db_dependency):
+async def validate_account(subscriber_id: int, db: db_dependency,user_id: int = Depends(check_auth_key)):
     latest_subscription = db.query(Subscriptions).filter(
         Subscriptions.subscriber_id == subscriber_id,
         Subscriptions.is_deleted == False
@@ -43,7 +44,7 @@ async def validate_account(subscriber_id: int, db: db_dependency):
     today = datetime.utcnow()
     remaining_days = (valid_till_date - today).days
     response = AccountValidation(
-        status=remaining_days >= 0,
+        status = remaining_days >= 0,
         OrganizationName=subscriber.organization_name if subscriber else None,
         PlanId=latest_subscription.plan_id,
         PlanName=plan.plan_name,

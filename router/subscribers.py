@@ -7,7 +7,7 @@ from models.plans import Plans
 from models.products import Products
 from models.subscriptions import Subscriptions
 import random
-
+from router.login import check_auth_key
 AuthKeys.metadata.create_all(engine)
 
 router = APIRouter()
@@ -50,15 +50,17 @@ async def is_auth_key_unique(db):
         auth_key = genare_auth_key()
     return auth_key
 
-async def create_auth_key(db,sub_id: int):
+async def create_auth_key(db,sub_id: int,plan_days:str):
     auth_key = await is_auth_key_unique(db)
     try:
         auth = AuthKeys(
             key_value=auth_key,
-            subscriber_id=sub_id
+            subscriber_id=sub_id,
         )
+        auth.key_valid_till = datetime.now() + timedelta(days=int(plan_days))
         db.add(auth)
         db.commit()
+        return auth_key
     except Exception as e:
         print(f"Error creating auth key: {e}")
         db.rollback()
@@ -79,7 +81,7 @@ async def create_subscriber(subscriber_data: SubscriberBase, db: db_dependency, 
         Subscriber.is_active == True
     ).first()
     if existing_email:
-        raise raise_exception(400, f"Email '{subscriber_data.email}' already exists for this product")
+        raise raise_exception(409, f"Email already exists for this product")
     
     existing_mobile = db.query(Subscriber).filter(
         Subscriber.product_id == subscriber_data.product_id,
@@ -87,16 +89,20 @@ async def create_subscriber(subscriber_data: SubscriberBase, db: db_dependency, 
         Subscriber.is_active == True
     ).first()
     if existing_mobile:
-        raise raise_exception(400, f"Mobile number '{subscriber_data.mobile_number}' already exists for this product")
+        raise raise_exception(409, f"Mobile number already exists for this product")
     
     try:
         subscriber = Subscriber(**subscriber_data.dict())
         db.add(subscriber)
         db.commit()
         db.refresh(subscriber)
-        background.add_task(create_auth_key, db, subscriber.subscribers_id)
+        auth_key = await create_auth_key(db, subscriber.subscribers_id,plan.duration_in_days)
+        payload = {
+            "subscribers_id":subscriber.subscribers_id,
+            "auth_key":auth_key
+        }
         background.add_task(create_subscriptions, plan.plan_id, subscriber.subscribers_id, db)
-        return succes_response(subscriber, "Subscriber created successfully")
+        return succes_response(payload,"Subscriber created successfully")
     except Exception as e:
         db.rollback()
         raise raise_exception(500, f"Internal Server Error: {e}")
@@ -133,7 +139,7 @@ async def create_subscriptions(plan_id: int, subscriber_id: int, db):
 
 
 @router.get("/get-subscriber/{subscribers_id}")
-async def get_subscriber_by_id(subscribers_id: int, db: db_dependency):
+async def get_subscriber_by_id(subscribers_id: int, db: db_dependency,user_id: int = Depends(check_auth_key)):
     subscriber = db.query(Subscriber).filter(
         Subscriber.subscribers_id == subscribers_id,
         Subscriber.is_deleted == False
@@ -159,7 +165,7 @@ async def delete_subscriber(subscribers_id: int, db: db_dependency):
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.patch("/update-subscriber/{subscribers_id}")
-async def update_subscriber(subscribers_id: int, update_data: SubscriberUpdate, db: db_dependency):
+async def update_subscriber(subscribers_id: int, update_data: SubscriberUpdate, db: db_dependency,user_id: int = Depends(check_auth_key)):
     subscriber = db.query(Subscriber).filter(
         Subscriber.subscribers_id == subscribers_id,
         Subscriber.is_deleted == False

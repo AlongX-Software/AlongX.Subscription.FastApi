@@ -35,9 +35,9 @@ def check_auth_key(request: Request, db:db_dependency):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Auth key is required")
     valid_key = db.query(AuthKeys).filter(
         AuthKeys.key_value == key,
-        AuthKeys.is_active == True
+        AuthKeys.is_active == True,
+        AuthKeys.key_valid_till > datetime.utcnow()
     ).first()
-
     if not valid_key:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired key")
     return valid_key.subscriber_id

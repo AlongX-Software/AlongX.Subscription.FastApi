@@ -29,7 +29,7 @@ async def create_plan(plan_data: PlanBase, db: db_dependency):
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.get("/get-plans-by-product/{product_id}")
-async def get_plans_by_product(product_id: int, db:db_dependency, user_id: int = Depends(check_auth_key)):
+async def get_plans_by_product(product_id: int, db:db_dependency):
     plans = db.query(Plans).filter(
         Plans.product_id == product_id,
         Plans.is_deleted == False

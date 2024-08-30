@@ -64,7 +64,7 @@ async def create_subscription(subscription_data: SubscriptionBase, db: db_depend
         raise raise_exception(500, f"Internal Server Error: {e}")
 
 @router.get("/get-subscription/{subcrption_id}")
-async def get_subscription_by_id(subcrption_id: int, db: db_dependency,user_id: int = Depends(check_auth_key)):
+async def get_subscription_by_id(subcrption_id: int, db: db_dependency):
     subscription = db.query(
         Subscriptions,
         Subscriber.organization_name,

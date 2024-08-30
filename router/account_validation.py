@@ -21,7 +21,7 @@ class AccountValidation(BaseModel):
     Message: str
 
 @router.get("/validate-account/{subscriber_id}", response_model=AccountValidation)
-async def validate_account(subscriber_id: int, db: db_dependency,user_id: int = Depends(check_auth_key)):
+async def validate_account(subscriber_id: int, db: db_dependency):
     latest_subscription = db.query(Subscriptions).filter(
         Subscriptions.subscriber_id == subscriber_id,
         Subscriptions.is_deleted == False

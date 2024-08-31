@@ -1,6 +1,5 @@
 from .basic_import import *
 from database.db import BASE
-
 class AuthKeys(BASE):
     __tablename__ = 'tbl_auth_keys'
     key_id = Column(Integer, primary_key=True, index=True)

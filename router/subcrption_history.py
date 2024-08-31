@@ -25,7 +25,7 @@ async def get_subscriptions_by_subscriber(subscriber_id: int, db: db_dependency,
     ).filter(
         Subscriptions.subscriber_id == subscriber_id,
         Subscriptions.is_deleted == False
-    ).all()
+    ).order_by(Subscriptions.subcrption_id.desc()).all()
 
     if not subscriptions:
         raise raise_exception(404, "No subscriptions found for the given subscriber")

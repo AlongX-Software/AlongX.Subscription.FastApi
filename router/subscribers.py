@@ -65,6 +65,29 @@ async def create_auth_key(db,sub_id: int,plan_days:str):
         print(f"Error creating auth key: {e}")
         db.rollback()
 
+# @router.get("/finish-prev-subs/")
+# async def finish_prev_subs(db:db_dependency):
+#     all_subs = db.query(Subscriber).all()
+#     for sub in all_subs:
+#         sub_current_subscription = db.query(Subscriptions)\
+#                 .filter(Subscriptions.subscriber_id == sub.subscribers_id)\
+#                 .order_by(Subscriptions.subcrption_id.desc())\
+#                 .first()
+#         if sub_current_subscription:
+#             auth_key = await is_auth_key_unique(db)
+#             try:
+#                 auth = AuthKeys(
+#                     key_value=auth_key,
+#                     subscriber_id=sub.subscribers_id,
+#                     key_valid_till=sub_current_subscription.valid_till 
+#                 )
+#                 db.add(auth)
+#                 db.commit()
+#                 print(f"Auth key generated for subscriber ID {sub.subscribers_id}")
+#             except Exception as e:
+#                 print(f"Error creating auth key for subscriber ID {sub.subscribers_id}: {e}")
+#                 db.rollback()
+
 @router.post("/create-subscriber/")
 async def create_subscriber(subscriber_data: SubscriberBase, db: db_dependency, background: BackgroundTasks):
     plan = db.query(Plans).filter(Plans.plan_id == subscriber_data.plan_id).first()

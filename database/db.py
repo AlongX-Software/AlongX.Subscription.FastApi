@@ -5,11 +5,11 @@ from sqlalchemy.ext.declarative import declarative_base,DeclarativeMeta
 from sqlalchemy.orm import sessionmaker,Session
 import urllib.parse
 
-host="alongx-product-dev-ci-sqlserver.database.windows.net"
-username="AlongxProduct"
-password="Alongx2024"
+host="gurukul-prod-ci-sqlserver.database.windows.net"
+username="gurukul-admin"
+password="24/m_Mp~V-x}"
 port = 1433
-database = "alongx-product-dev-ci-sqldatabase "
+database = "gurukul-prod-ci-sqldatabase"
 encoded_username = urllib.parse.quote_plus(username)
 encoded_password = urllib.parse.quote_plus(password)
 

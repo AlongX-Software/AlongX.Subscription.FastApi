@@ -129,3 +129,5 @@ async def update_subscription(subcrption_id: int, update_data: Dict[str, Optiona
         return jsonable_encoder(subscription)
     except Exception as e:
         raise raise_exception(500, f"Internal Server Error: {e}")
+
+

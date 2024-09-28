@@ -21,3 +21,4 @@ pydantic_extra_types
 pyodbc
 pytz
 httpx
+pandas

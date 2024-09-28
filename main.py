@@ -1,8 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from router import products,plans,subscribers,subscriptions,subcrption_history,notifications,renew_product,account_validation,login
+from router import products,plans,subscribers,subscriptions,subcrption_history,\
+notifications,renew_product,account_validation,login,widget,dashboard
 
 app = FastAPI(title="AlongX.Subscription.Api",description="AlongX Subscription API",version="V0.01")
+
+@app.get("/")
+async def read_root():
+    return {"message": "Welcome to AlongX Subscription API"}
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,6 +26,13 @@ app.include_router(
     prefix="/AccountValidation",
     tags=["AccountValidation"]
 )
+
+app.include_router(
+    dashboard.router,
+    prefix="/Dashboard",
+    tags=["Dashboard"]
+)
+
 app.include_router(
     notifications.router,
     prefix="/Notifications",
@@ -55,4 +67,9 @@ app.include_router(
     subscriptions.router,
     prefix="/Subscriptions",
     tags=["Subscriptions"]
+)
+app.include_router(
+    widget.router,
+    prefix="/Widget",
+    tags=["Widget"]
 )

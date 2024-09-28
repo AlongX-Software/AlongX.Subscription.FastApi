@@ -6,7 +6,7 @@ variables:
   webAppName: 'alongx-store-product-api-1-prod-ci-as'
   resourceGroupName: 'alongx-prod-ci-rg'
   vmImageName: 'ubuntu-latest'
-  environmentName: 'alongx-store-product-api-1-prod-ci-as'
+  environmentName: 'alongx-store-product-api-en'
   projectRoot: $(System.DefaultWorkingDirectory)
   pythonVersion: '3.12'
   isMaster: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]

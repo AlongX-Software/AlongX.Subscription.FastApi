@@ -1,8 +1,9 @@
-from database.db import db_dependency,engine
+from database.db import db_dependency,engine,execute_raw_sql
 from fastapi.encoders import jsonable_encoder
 from fastapi import APIRouter,status,WebSocket,WebSocketDisconnect,Depends,BackgroundTasks,Request
 from pydantic import BaseModel,Field,EmailStr,validator
 from fastapi.exceptions import HTTPException
+from sqlalchemy import text
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 import re,json

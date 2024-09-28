@@ -14,3 +14,5 @@ class Subscriptions(BASE):
     amount_paid = Column (Float)
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
+
+    

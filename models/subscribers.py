@@ -17,3 +17,7 @@ class Subscriber(BASE):
     pincode = Column(Text)
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
+
+    #relation
+    plan = relationship("Plans", backref="subscribers")
+    subscriptions = relationship("Subscriptions", backref="subscribers")

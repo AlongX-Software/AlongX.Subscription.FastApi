@@ -6,5 +6,6 @@ class Products(BASE):
     product_name = Column(Text)
     product_description = Column(Text,nullable=True)
     product_image_url = Column(Text)
+    product_url = Column(Text)
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)

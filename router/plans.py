@@ -14,6 +14,8 @@ class PlanBase(BaseModel):
     is_active: bool = Field(default=True)
     is_deleted: bool = Field(default=False)
 
+
+
 @router.post("/create-plan/")
 async def create_plan(plan_data: PlanBase, db: db_dependency):
     product = db.query(Products).filter(Products.product_id == plan_data.product_id).first()
@@ -36,6 +38,14 @@ async def get_plans_by_product(product_id: int, db:db_dependency):
     ).all()
     return jsonable_encoder(plans)
 
+@router.get("/get-plan-by-id/")
+async def get_plans_by_product(plan_id: int, db:db_dependency):
+    plan = await check_instance(Plans, "plan_id", plan_id, db)
+    if plan is None:
+        raise raise_exception(404, "Plan not found")       
+    return jsonable_encoder(plan)
+
+
 @router.delete("/delete-plan/{plan_id}")
 async def delete_plan(plan_id: int,db: db_dependency,user_id: int = Depends(check_auth_key)):
     try:
@@ -50,4 +60,21 @@ async def delete_plan(plan_id: int,db: db_dependency,user_id: int = Depends(chec
         else:
             raise raise_exception(400, "Cannot delete plan as it is being used by a Subscriber")
     except Exception as e:
+        raise raise_exception(500, f"Operation failed: {e}")
+    
+
+@router.patch("/update-plan/")
+async def update_plan(plan_id:int,plan:PlanBase,db:db_dependency,user_id: int = Depends(check_auth_key)):
+    plan_exists = await check_instance(Plans, "plan_id", plan_id, db)
+    if plan_exists is None:
+        raise raise_exception(404, "Plan not found")
+    try:
+        for key,val in plan.__dict__.items():
+            if key != "product_id":
+                setattr(plan_exists,key,val)
+        db.commit()
+        db.refresh(plan_exists)
+        return succes_response(plan_exists, "Plan updated successfully")
+    except Exception as e:
+        print(e)
         raise raise_exception(500, f"Operation failed: {e}")

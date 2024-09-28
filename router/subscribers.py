@@ -1,5 +1,5 @@
 from typing import Optional, Dict
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,date
 from .basic_import import *
 from models.subscribers import Subscriber
 from models.valid_keys import AuthKeys
@@ -64,29 +64,6 @@ async def create_auth_key(db,sub_id: int,plan_days:str):
     except Exception as e:
         print(f"Error creating auth key: {e}")
         db.rollback()
-
-# @router.get("/finish-prev-subs/")
-# async def finish_prev_subs(db:db_dependency):
-#     all_subs = db.query(Subscriber).all()
-#     for sub in all_subs:
-#         sub_current_subscription = db.query(Subscriptions)\
-#                 .filter(Subscriptions.subscriber_id == sub.subscribers_id)\
-#                 .order_by(Subscriptions.subcrption_id.desc())\
-#                 .first()
-#         if sub_current_subscription:
-#             auth_key = await is_auth_key_unique(db)
-#             try:
-#                 auth = AuthKeys(
-#                     key_value=auth_key,
-#                     subscriber_id=sub.subscribers_id,
-#                     key_valid_till=sub_current_subscription.valid_till 
-#                 )
-#                 db.add(auth)
-#                 db.commit()
-#                 print(f"Auth key generated for subscriber ID {sub.subscribers_id}")
-#             except Exception as e:
-#                 print(f"Error creating auth key for subscriber ID {sub.subscribers_id}: {e}")
-#                 db.rollback()
 
 @router.post("/create-subscriber/")
 async def create_subscriber(subscriber_data: SubscriberBase, db: db_dependency, background: BackgroundTasks):
@@ -179,7 +156,6 @@ async def delete_subscriber(subscribers_id: int, db: db_dependency):
     ).first()
     if subscriber is None:
         raise raise_exception(404, "Subscriber not found")
-    
     try:
         subscriber.is_deleted = True
         db.commit()
@@ -202,5 +178,83 @@ async def update_subscriber(subscribers_id: int, update_data: SubscriberUpdate, 
         db.commit()
         db.refresh(subscriber)
         return jsonable_encoder(subscriber)
+    except Exception as e:
+        raise raise_exception(500, f"Internal Server Error: {e}")
+
+@router.get("/get-subscribers-by-product/")
+async def get_subscribers_by_product(product_id: int, db: db_dependency, user_id: int = Depends(check_auth_key)):
+    try:
+        subscribers = (
+                db.query(Subscriber)
+                .options(
+                    joinedload(Subscriber.plan).load_only(Plans.plan_name),  
+                    joinedload(Subscriber.subscriptions).load_only(Subscriptions.valid_till)  
+                )
+                .filter(
+                    Subscriber.product_id == product_id,
+                    Subscriber.is_deleted == False  
+                )
+                .order_by(Subscriber.subscribers_id.desc())  
+                .all() 
+            )
+        return subscribers
+    except Exception as e:
+        print(e)
+        raise raise_exception(500, f"Internal Server Error: {e}")
+
+@router.get("/get-sub-data/")
+async def get_sub_data(subscribers_id: int, db: db_dependency):
+        try:
+            subscribers = (
+                    db.query(Subscriber)
+                    .options(
+                        joinedload(Subscriber.plan).load_only(Plans.plan_name),  
+                        joinedload(Subscriber.subscriptions).load_only(Subscriptions.valid_till)  
+                    )
+                    .filter(
+                        Subscriber.subscribers_id == subscribers_id,
+                        Subscriber.is_deleted == False  
+                    )
+                    .first() 
+                )
+            return subscribers
+        except Exception as e:
+            print(e)
+            raise raise_exception(500, f"Internal Server Error: {e}")
+
+class SubUpdateBase(BaseModel):
+    subscribers_id: int
+    plan_validation_date:date
+
+@router.patch("/update-subs-plan-validation/")
+async def update_subs_plan_validation(sub_update: SubUpdateBase, db: db_dependency):
+    # Check if the subscriber exists
+    print(sub_update.subscribers_id)
+    sub = await check_instance(Subscriber, "subscribers_id", sub_update.subscribers_id, db)
+    if sub is None:
+        raise raise_exception(404, "Subscriber not found")
+
+    # Retrieve the latest subscription
+    latest_subscription = db.query(Subscriptions).filter(
+        Subscriptions.subscriber_id == sub_update.subscribers_id
+    ).order_by(Subscriptions.subcrption_id.desc()).first()
+
+    if latest_subscription is None:
+        raise raise_exception(404, "No subscription found")
+
+    try:
+        # Convert plan_validation_date to datetime if it's a date
+        if isinstance(sub_update.plan_validation_date,date):
+            # Convert the date to datetime (with time set to midnight)
+            plan_validation_date = datetime.combine(sub_update.plan_validation_date, datetime.min.time())
+        else:
+            plan_validation_date = sub_update.plan_validation_date
+        
+        # Update the subscription's valid_till field
+        latest_subscription.valid_till = plan_validation_date
+        db.commit()
+        db.refresh(latest_subscription)
+        print(latest_subscription.__dict__)
+        return succes_response("", "Subscriber Plan Validation Updated")
     except Exception as e:
         raise raise_exception(500, f"Internal Server Error: {e}")

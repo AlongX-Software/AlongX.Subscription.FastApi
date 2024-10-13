@@ -20,7 +20,6 @@ class WidgetProcessor:
                 return pd.DataFrame() 
         except Exception as e:
             pass
-            # raise Exception(f"Internal server error: {e}")
 
     def process_data(self):
         for widget in self.widget_instances:
@@ -32,7 +31,19 @@ class WidgetProcessor:
                     "widget_id": widget.widget_id,
                     "data": self.check_labels(widget.widget_type, data_df),
                     "height":widget.height,
-                    "width":widget.width
+                    "width":widget.width,
+                    'is_widget_working':True
+                }
+                self.return_data.append(return_dict)
+            else:
+                return_dict = {
+                    "title": widget.widget_name,
+                    "chart_type": widget.widget_type,
+                    "widget_id": widget.widget_id,
+                    "data": '',
+                    "height":widget.height,
+                    "width":widget.width,
+                    'is_widget_working':False
                 }
                 self.return_data.append(return_dict)
         return self.return_data
@@ -50,8 +61,8 @@ class WidgetProcessor:
 
     def return_label_for_barchart(self, data_df):
         try:
-            labels = data_df.iloc[:, 0].tolist()  # First column as labels
-            counts = data_df.iloc[:, 1].tolist()  # Second column as counts
+            labels = data_df.iloc[:, 0].tolist()
+            counts = data_df.iloc[:, 1].tolist()
             return {"label": labels, "counts": counts}
         except Exception as e:
             raise Exception(f"Error processing bar chart data: {e}")

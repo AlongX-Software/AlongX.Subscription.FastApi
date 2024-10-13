@@ -224,17 +224,36 @@ async def get_sub_data(subscribers_id: int, db: db_dependency):
 
 class SubUpdateBase(BaseModel):
     subscribers_id: int
-    plan_validation_date:date
+    plan_validation_date: date
+    organization_name: str
+    mobile_number: str
+    email: str
+
+def update_auth_key(sub_id, plan_valid, db):
+    auth = db.query(AuthKeys).filter(AuthKeys.subscriber_id == sub_id).first()
+    if auth is None:
+        return ""
+    
+    try:
+        if isinstance(plan_valid, date):
+            auth.key_valid_till = datetime.combine(plan_valid, datetime.min.time())  
+        else:
+            auth.key_valid_till = plan_valid
+        
+        db.commit()
+        db.refresh(auth) 
+        return "done"
+    
+    except Exception as e:
+        print(f"Error updating auth key: {e}")  
+        return "error"
 
 @router.patch("/update-subs-plan-validation/")
-async def update_subs_plan_validation(sub_update: SubUpdateBase, db: db_dependency):
-    # Check if the subscriber exists
-    print(sub_update.subscribers_id)
+async def update_subs_plan_validation(sub_update: SubUpdateBase, db: db_dependency, background: BackgroundTasks):
     sub = await check_instance(Subscriber, "subscribers_id", sub_update.subscribers_id, db)
     if sub is None:
         raise raise_exception(404, "Subscriber not found")
 
-    # Retrieve the latest subscription
     latest_subscription = db.query(Subscriptions).filter(
         Subscriptions.subscriber_id == sub_update.subscribers_id
     ).order_by(Subscriptions.subcrption_id.desc()).first()
@@ -243,18 +262,20 @@ async def update_subs_plan_validation(sub_update: SubUpdateBase, db: db_dependen
         raise raise_exception(404, "No subscription found")
 
     try:
-        # Convert plan_validation_date to datetime if it's a date
-        if isinstance(sub_update.plan_validation_date,date):
-            # Convert the date to datetime (with time set to midnight)
+        if isinstance(sub_update.plan_validation_date, date):
             plan_validation_date = datetime.combine(sub_update.plan_validation_date, datetime.min.time())
         else:
             plan_validation_date = sub_update.plan_validation_date
+
+        sub.organization_name = sub_update.organization_name 
+        sub.mobile_number = sub_update.mobile_number 
+        sub.email = sub_update.email
         
-        # Update the subscription's valid_till field
         latest_subscription.valid_till = plan_validation_date
         db.commit()
-        db.refresh(latest_subscription)
-        print(latest_subscription.__dict__)
+        db.refresh(latest_subscription)  
+        
+        background.add_task(update_auth_key, sub_update.subscribers_id, plan_validation_date, db)
         return succes_response("", "Subscriber Plan Validation Updated")
     except Exception as e:
         raise raise_exception(500, f"Internal Server Error: {e}")

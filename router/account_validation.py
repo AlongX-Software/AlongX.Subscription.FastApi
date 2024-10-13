@@ -25,7 +25,7 @@ async def validate_account(subscriber_id: int, db: db_dependency):
     latest_subscription = db.query(Subscriptions).filter(
         Subscriptions.subscriber_id == subscriber_id,
         Subscriptions.is_deleted == False
-    ).order_by(desc(Subscriptions.date_of_transations)).first()  
+    ).order_by(desc(Subscriptions.date_of_transations)).first()
     if not latest_subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
     plan = db.query(Plans).filter(

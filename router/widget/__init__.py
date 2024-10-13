@@ -40,6 +40,7 @@ async def get_all_widgets_by_product_id(product_id: int,dashboard_id:int,db: db_
         widgets = db.query(Widget).filter(Widget.is_deleted == False, Widget.product_id == product_id,Widget.dashboard_id == dashboard_id).order_by(Widget.position.asc()).all()        
         widget_processor = WidgetProcessor(widgets)
         processed_data = widget_processor.process_data()
+        print(processed_data)
         return processed_data
     except Exception as e:
         raise raise_exception(500, f"Internal server error: {e}")

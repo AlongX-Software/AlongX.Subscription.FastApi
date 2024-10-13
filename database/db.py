@@ -7,11 +7,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker,Session
 import urllib.parse
 
-host="gurukul-prod-ci-sqlserver.database.windows.net"
-username="gurukul-admin"
+host="alongx-product-prod-ci-sqlserver.database.windows.net"
+username="alongx-admin"
 password="24/m_Mp~V-x}"
 port = 1433
-database = "gurukul-prod-ci-sqldatabase"
+database = "alongx-product-prod-ci-sqldatabase"
 encoded_username = urllib.parse.quote_plus(username)
 encoded_password = urllib.parse.quote_plus(password)
 
@@ -34,7 +34,7 @@ def execute_raw_sql(sql_query, params=None):
             # Convert rows to list of tuples for pandas
             return column_names, [row for row in rows]
     except SQLAlchemyError as e:
-        logging.error("Error executing SQL query: %s", e)
+        # logging.error("Error executing SQL query: %s", e)
         return None, None
 
 

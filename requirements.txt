@@ -22,3 +22,4 @@ pyodbc
 pytz
 httpx
 pandas
+python-dotenv
